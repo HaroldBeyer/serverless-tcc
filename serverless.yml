@@ -35,21 +35,21 @@ provider:
 
 functions:
   getService:
-    handler: handlers/service-handler.getService
+    handler: handlers/service.handler.getService
     events:
       - http:
           path: service/{id}
           method: GET
           cors: true
   getAllServices:
-    handler: handlers/service-handler.getAllServices
+    handler: handlers/service.handler.getAllServices
     events:
       - http:
           path: service
           method: GET
           cors: true
   insertService: 
-    handler: handlers/service-handler.insertService
+    handler: handlers/service.handler.insertService
     events:
       - http:
           path: service
