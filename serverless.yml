@@ -70,3 +70,24 @@ functions:
           path: schedule-plan/{id}
           method: PUT
           cors: true
+  getSchedule:
+    handler: handlers/schedule-handler.get
+    events:
+      - http:
+          path: schedule/{id}
+          method: GET
+          cors: true
+  getAllSchedules:
+    handler: handlers/schedule-handler.getAll
+    events:
+      - http:
+          path: schedule
+          method: GET
+          cors: true
+  insertSchedule: 
+    handler: handlers/schedule-handler.insert
+    events:
+      - http:
+          path: schedule
+          method: POST
+          cors: true

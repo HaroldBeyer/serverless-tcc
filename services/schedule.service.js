@@ -3,7 +3,7 @@ const uuid = require('uuid');
 const { httpReturn } = require('../utils/httpReturn');
 const { HTTP_SUCCESS, DYNAMO_DB_CONFIGS, DYNAMO_DB_SORT_KEYS } = require('../utils/enums');
 
-export class ScheduleService {
+class ScheduleService {
     constructor() {
         this.TableName = DYNAMO_DB_CONFIGS.TableName;
         this.type = DYNAMO_DB_SORT_KEYS.SCHEDULE;
@@ -12,7 +12,7 @@ export class ScheduleService {
         this.dynamoDb = new AWS.DynamoDB.DocumentClient();
     }
 
-    get(event) {
+    async get(event) {
         const id = event.pathParameters.id;
 
         const result = await this.dynamoDb.get({
@@ -29,7 +29,7 @@ export class ScheduleService {
         );
     }
 
-    getAll() {
+    async getAll() {
         const Key = { type: this.type };
         const result = await this.dynamoDb.get({ TableName, Key }).promise();
 
@@ -40,14 +40,13 @@ export class ScheduleService {
         );
     }
 
-    insert(event) {
+    async insert(event) {
         const requestBody = JSON.parse(event.body);
         const id = uuid.v1();
-        const keys = Object.keys(requestBody);
-        let Item = { id, type: this.type }
-        keys.forEach(key => {
-            Item[key] = requestBody[key];
-        });
+        const { hour, day, year, month } = requestBody;
+        const date = new Date(year, month, day, hour).toISOString();
+
+        let Item = { id, type: this.type, occupied: false, date };
 
         const params = {
             TableName: this.TableName,
@@ -63,35 +62,31 @@ export class ScheduleService {
         );
     }
 
-    delete(event) {
-        const id = event.pathParameters.id;
+    async alter(id, option) {
+        const params = {
+            TableName: this.TableName,
+            UpdateExpression: 'SET #occupied =:o',
+            ExpressionAttributeValues: {
+                ':o': option
+            },
+            ExpressionAttributeNames: {
+                "#option": "option"
+            },
+            Key: { id },
+            ReturnValues: 'UPDATED_NEW'
+        }
 
-        const result = await dynamoDb.delete({ TableName: this.TableName, Key: { id } }).promise();
+        const result = await this.dynamoDb.update(params).promise();
 
         return httpReturn(
             HTTP_SUCCESS.SuccessOK,
-            `Succesfully deleted ${id}`,
+            `Schedule ${id} succesfully updated`,
             result
         );
     }
-
-    put() {
-
-    }
-
-    patch() {
-
-    }
-
-    occupy(id) {
-        let UpdateExpression = 'SET #occupied =:o';
-        let ExpressionAttributeValues = {};
-        let ExpressionAttributeNames = {};
-
-    }
+}
 
 
-
-
-
+module.exports = {
+    ScheduleService
 }

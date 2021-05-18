@@ -68,7 +68,9 @@ class SchedulePlanService {
 
         const schedulePlan = await this.dynamoDb.get({ TableName: this.TableName, Key: { id, type: this.type } }).promise();
 
-        let schedules = schedulePlan.$response.data.schedules;
+        let schedules = schedulePlan.Item.schedules;
+
+        console.log(`schedules: ${JSON.stringify(schedules)}`);
 
         if (!schedules) {
             schedules = [];
@@ -77,7 +79,7 @@ class SchedulePlanService {
         schedules.push(schedule);
 
         let UpdateExpression = 'SET #schedules =:s';
-        let ExpressionAttributeValues = { ":s": "schedules" };
+        let ExpressionAttributeValues = { ":s": schedules };
         let ExpressionAttributeNames = { "#schedules": "schedules" };
 
         const params = {
@@ -85,7 +87,7 @@ class SchedulePlanService {
             UpdateExpression,
             ExpressionAttributeNames,
             ExpressionAttributeValues,
-            key: { id, type: this.type },
+            Key: { id, type: this.type },
             ReturnValues: 'UPDATED_NEW'
         }
 
