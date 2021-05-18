@@ -3,7 +3,7 @@ const uuid = require('uuid');
 const { httpReturn } = require('../utils/httpReturn');
 const { HTTP_SUCCESS, DYNAMO_DB_CONFIGS, DYNAMO_DB_SORT_KEYS } = require('../utils/enums');
 
-export class SchedulePlanService {
+class SchedulePlanService {
     constructor() {
         this.TableName = DYNAMO_DB_CONFIGS.TableName;
         this.type = DYNAMO_DB_SORT_KEYS.SCHEDULE_PLAN;
@@ -99,4 +99,9 @@ export class SchedulePlanService {
     }
 
 
+}
+
+
+module.exports = {
+    SchedulePlanService
 }

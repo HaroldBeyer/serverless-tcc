@@ -1,16 +1,3 @@
-# Welcome to Serverless!
-#
-# This file is the main config file for your service.
-# It's very minimal at this point and uses default values.
-# You can always add more config options for more control.
-# We've included some commented out config examples here.
-# Just uncomment any of them to get that config option.
-#
-# For full config options, check the docs:
-#    docs.serverless.com
-#
-# Happy Coding!
-
 service: serverless-tcc
 
 frameworkVersion: '2'
@@ -35,21 +22,21 @@ provider:
 
 functions:
   getService:
-    handler: handlers/service.handler.getService
+    handler: handlers/service-handler.getService
     events:
       - http:
           path: service/{id}
           method: GET
           cors: true
   getAllServices:
-    handler: handlers/service.handler.getAllServices
+    handler: handlers/service-handler.getAllServices
     events:
       - http:
           path: service
           method: GET
           cors: true
   insertService: 
-    handler: handlers/service.handler.insertService
+    handler: handlers/service-handler.insertService
     events:
       - http:
           path: service
