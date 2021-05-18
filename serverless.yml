@@ -42,3 +42,31 @@ functions:
           path: service
           method: POST
           cors: true
+  getSchedulePlan:
+    handler: handlers/schedule-plan-handler.get
+    events:
+      - http:
+          path: schedule-plan/{id}
+          method: GET
+          cors: true
+  getAllSchedulePlans:
+    handler: handlers/schedule-plan-handler.getAll
+    events:
+      - http:
+          path: schedule-plan
+          method: GET
+          cors: true
+  insertSchedulePlan: 
+    handler: handlers/schedule-plan-handler.insert
+    events:
+      - http:
+          path: schedule-plan
+          method: POST
+          cors: true
+  insertScheduleIntoSchedulePlan: 
+    handler: handlers/schedule-plan-handler.insertSchedule
+    events:
+      - http:
+          path: schedule-plan/{id}
+          method: PUT
+          cors: true

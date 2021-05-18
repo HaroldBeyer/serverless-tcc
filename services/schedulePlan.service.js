@@ -12,7 +12,7 @@ class SchedulePlanService {
         this.dynamoDb = new AWS.DynamoDB.DocumentClient();
     }
 
-    get(event) {
+    async get(event) {
         const id = event.pathParameters.id;
 
         const result = await this.dynamoDb.get({
@@ -29,7 +29,7 @@ class SchedulePlanService {
         );
     }
 
-    getAll() {
+    async getAll() {
         const Key = { type: this.type };
         const result = await this.dynamoDb.get({ TableName: this.TableName, Key }).promise();
 
@@ -40,7 +40,7 @@ class SchedulePlanService {
         );
     }
 
-    insert(event) {
+    async insert(event) {
         const requestBody = JSON.parse(event.body);
         const id = uuid.v1();
         const { service } = requestBody;
@@ -60,7 +60,7 @@ class SchedulePlanService {
         );
     }
 
-    insertSchedule(event) {
+    async insertSchedule(event) {
         const requestBody = JSON.parse(event.body);
         const id = event.pathParameters.id;
 
