@@ -30,8 +30,21 @@ class ServiceService {
     }
 
     async getAll() {
-        const Key = { type: this.type };
-        const result = await this.dynamoDb.get({ TableName: this.TableName, Key }).promise();
+        const params = {
+            // Specify which items in the results are returned.
+            FilterExpression: "#type = :t",
+            // Define the expression attribute value, which are substitutes for the values you want to compare.
+            ExpressionAttributeValues: {
+                ":t": { S: this.type }
+            },
+            ExpressionAttributeNames: {
+                "#type": "type"
+            },
+            TableName: this.TableName,
+            ProjectExpression: "id, name, type"
+        };
+
+        const result = await this.dynamoDb.scan(params).promise();
 
         return httpReturn(
             HTTP_SUCCESS.SuccessOK,
