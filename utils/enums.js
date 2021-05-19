@@ -78,8 +78,12 @@ const HTTP_SUCCESS = {
 };
 
 const DYNAMO_DB_CONFIGS = {
-    TableName: "tcc"
+    TableName: "tcc3"
 };
+
+const DYNAMO_DB_APPLICATIONS = {
+    SERVERLESS_APPLICATION: "serverless"
+}
 
 const DYNAMO_DB_SORT_KEYS = {
     SERVICE: "service",
@@ -102,5 +106,6 @@ module.exports = {
     HTTP_SUCCESS,
     DYNAMO_DB_CONFIGS,
     DYNAMO_DB_SORT_KEYS,
-    REQUEST_STATUS
+    REQUEST_STATUS,
+    DYNAMO_DB_APPLICATIONS
 }

@@ -3,9 +3,8 @@ AWS.config.setPromisesDependency(require('bluebird'));
 const { ServiceService } = require('../services/service.service');
 
 const service = new ServiceService(AWS);
-
 module.exports.getService = async (event) => {
-    return service.get(event);
+        return service.get(event);
 };
 
 module.exports.getAllServices = async (event) => {

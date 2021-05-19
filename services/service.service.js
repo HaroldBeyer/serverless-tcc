@@ -1,11 +1,12 @@
 const uuid = require('uuid');
 const { httpReturn } = require('../utils/httpReturn');
-const { HTTP_SUCCESS, DYNAMO_DB_CONFIGS, DYNAMO_DB_SORT_KEYS } = require('../utils/enums');
+const { HTTP_SUCCESS, DYNAMO_DB_CONFIGS, DYNAMO_DB_SORT_KEYS, DYNAMO_DB_APPLICATIONS } = require('../utils/enums');
 
 class ServiceService {
     constructor(AWS) {
         this.TableName = DYNAMO_DB_CONFIGS.TableName;
         this.type = DYNAMO_DB_SORT_KEYS.SERVICE;
+        this.application = DYNAMO_DB_APPLICATIONS.SERVERLESS_APPLICATION;
 
         this.dynamoDb = new AWS.DynamoDB.DocumentClient();
     }
@@ -13,12 +14,17 @@ class ServiceService {
     async get(event) {
         const id = event.pathParameters.id;
 
-        const result = await this.dynamoDb.get({
-            TableName: this.TableName, Key: {
+        const params = {
+            TableName: this.TableName,
+            Key: {
+                application: this.application,
                 id,
-                type: this.type
             }
-        }).promise();
+        };
+
+        console.log(`Params: ${JSON.stringify(params)}`);
+
+        const result = await this.dynamoDb.get(params).promise();
 
         return httpReturn(
             HTTP_SUCCESS.SuccessOK,
@@ -29,17 +35,9 @@ class ServiceService {
 
     async getAll() {
         const params = {
-            // Specify which items in the results are returned.
-            FilterExpression: "#type = :t",
-            // Define the expression attribute value, which are substitutes for the values you want to compare.
-            ExpressionAttributeValues: {
-                ":t": { S: this.type }
-            },
-            ExpressionAttributeNames: {
-                "#type": "type"
-            },
             TableName: this.TableName,
-            ProjectExpression: "id, name, type"
+            FilterExpression: "application = :application",
+            ExpressionAttributeValues: { ":application": this.application }
         };
 
         const result = await this.dynamoDb.scan(params).promise();
@@ -56,16 +54,12 @@ class ServiceService {
         const id = uuid.v1();
         const { name } = requestBody;
 
-        const Item = { id, type: this.type, name }
-
-        console.log(`Item: ${JSON.stringify(Item)}`);
+        const Item = { id, type: this.type, name, application: this.application };
 
         const params = {
             TableName: this.TableName,
             Item
         }
-
-        console.log(`Params: ${JSON.stringify(params)}`);
 
         const result = await this.dynamoDb.put(params).promise();
 
