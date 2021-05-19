@@ -1,11 +1,12 @@
 const uuid = require('uuid');
 const { httpReturn } = require('../utils/httpReturn');
-const { HTTP_SUCCESS, DYNAMO_DB_CONFIGS, DYNAMO_DB_SORT_KEYS } = require('../utils/enums');
+const { HTTP_SUCCESS, DYNAMO_DB_CONFIGS, DYNAMO_DB_SORT_KEYS, DYNAMO_DB_APPLICATIONS } = require('../utils/enums');
 
 class ScheduleService {
     constructor(AWS) {
         this.TableName = DYNAMO_DB_CONFIGS.TableName;
         this.type = DYNAMO_DB_SORT_KEYS.SCHEDULE;
+        this.application = DYNAMO_DB_APPLICATIONS.SERVERLESS_APPLICATION;
 
         this.dynamoDb = new AWS.DynamoDB.DocumentClient();
     }
@@ -13,12 +14,15 @@ class ScheduleService {
     async get(event) {
         const id = event.pathParameters.id;
 
-        const result = await this.dynamoDb.get({
-            TableName: this.TableName, Key: {
+        const params = {
+            TableName: this.TableName,
+            Key: {
+                application: this.application,
                 id,
-                type: this.type
             }
-        }).promise();
+        };
+
+        const result = await this.dynamoDb.get(params).promise();
 
         return httpReturn(
             HTTP_SUCCESS.SuccessOK,
@@ -28,8 +32,13 @@ class ScheduleService {
     }
 
     async getAll() {
-        const Key = { type: this.type };
-        const result = await this.dynamoDb.get({ TableName, Key }).promise();
+        const params = {
+            TableName: this.TableName,
+            FilterExpression: "application = :application",
+            ExpressionAttributeValues: { ":application": this.application }
+        };
+
+        const result = await this.dynamoDb.scan(params).promise();
 
         return httpReturn(
             HTTP_SUCCESS.SuccessOK,
@@ -44,7 +53,7 @@ class ScheduleService {
         const { hour, day, year, month } = requestBody;
         const date = new Date(year, month, day, hour).toISOString();
 
-        let Item = { id, type: this.type, occupied: false, date };
+        let Item = { application: this.application, id, type: this.type, occupied: false, date };
 
         const params = {
             TableName: this.TableName,
@@ -70,7 +79,7 @@ class ScheduleService {
             ExpressionAttributeNames: {
                 "#occupied": "occupied"
             },
-            Key: { id, type: this.type },
+            Key: { id, applcation: this.application },
             ReturnValues: 'UPDATED_NEW'
         }
 
@@ -89,7 +98,7 @@ class ScheduleService {
             ExpressionAttributeNames: {
                 "#schedulePlan": "schedulePlan"
             },
-            Key: { id: scheduleId, type: this.type },
+            Key: { id: scheduleId, application: this.application },
             ReturnValues: 'UPDATED_NEW'
         }
 

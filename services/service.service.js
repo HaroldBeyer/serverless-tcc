@@ -22,8 +22,6 @@ class ServiceService {
             }
         };
 
-        console.log(`Params: ${JSON.stringify(params)}`);
-
         const result = await this.dynamoDb.get(params).promise();
 
         return httpReturn(
