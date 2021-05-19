@@ -1,20 +1,19 @@
-const AWS = require('aws-sdk');
+const { AlterStatusFacade } = require('../facades/alter-status.facade');
+
 const uuid = require('uuid');
 const { httpReturn } = require('../utils/httpReturn');
 const { HTTP_SUCCESS, DYNAMO_DB_CONFIGS, DYNAMO_DB_SORT_KEYS, REQUEST_STATUS } = require('../utils/enums');
 
-export class RequestService {
-    constructor() {
+class RequestService {
+    constructor(AWS) {
         this.TableName = DYNAMO_DB_CONFIGS.TableName;
         this.type = DYNAMO_DB_SORT_KEYS.REQUEST;
-        AWS.config.setPromisesDependency(require('bluebird'));
 
         this.dynamoDb = new AWS.DynamoDB.DocumentClient();
+        this.facade = new AlterStatusFacade(AWS, this);
     }
 
-    get(event) {
-        const id = event.pathParameters.id;
-
+    async get(id) {
         const result = await this.dynamoDb.get({
             TableName: this.TableName, Key: {
                 id,
@@ -29,7 +28,7 @@ export class RequestService {
         );
     }
 
-    getAll() {
+    async getAll() {
         const Key = { type: this.type };
         const result = await this.dynamoDb.get({ TableName, Key }).promise();
 
@@ -40,11 +39,17 @@ export class RequestService {
         );
     }
 
-    insert(event) {
+    async insert(event) {
         const requestBody = JSON.parse(event.body);
         const id = uuid.v1();
-        const { service, status, scheduledDate } = requestBody;
-        const createdAt = new Date();
+        const createdAt = new Date().toISOString();
+        const status = REQUEST_STATUS.WAITING;
+        const { service } = requestBody;
+
+        const _service = await this.dynamoDb.get({ TableName: this.TableName, Key: { id: service, type: DYNAMO_DB_SORT_KEYS.SERVICE } }).promise();
+
+        const scheduledDate = _service.Item.Date;
+
         let Item = { id, type: this.type, service, status, scheduledDate, createdAt };
 
         const params = {
@@ -61,44 +66,34 @@ export class RequestService {
         );
     }
 
-    delete(event) {
+    async confirm(event) {
         const id = event.pathParameters.id;
-
-        const result = await dynamoDb.delete({ TableName: this.TableName, Key: { id } }).promise();
-
-        return httpReturn(
-            HTTP_SUCCESS.SuccessOK,
-            `Succesfully deleted ${id}`,
-            result
-        );
+        return this.facade.propagateNewStatus(id, true);
     }
 
+    async cancel(event) {
+        const id = event.pathParameters.id;
+        return this.facade.propagateNewStatus(id, false);
+    }
 
-    update(id, option) {
-        const id = event.pathParameters.requestId;
-
-        let UpdateExpression = 'SET #status =:s';
-        let ExpressionAttributeValues = { ":s": option };
-        let ExpressionAttributeNames = { "#status": "status" };
-
+    async alterStatus(id, status) {
+        const UpdateExpression = 'SET #status =:s';
+        const ExpressionAttributeValues = { ":s": status };
+        const ExpressionAttributeNames = { "#status": "status" };
         const params = {
             TableName: this.TableName,
             UpdateExpression,
             ExpressionAttributeNames,
             ExpressionAttributeValues,
-            key: { id },
+            Key: { id, type: this.type },
             ReturnValues: 'UPDATED_NEW'
-        }
-
-        const result = await this.dynamoDb.update(params).promise();
-
-        return httpReturn(
-            HTTP_SUCCESS.SuccessOK,
-            `Succesfully updated ${id}`,
-            result
-        );
-
-
+        };
+        console.log(`Key: ${{ id, type: this.type }}`);
+        return this.dynamoDb.update(params).promise();
     }
 
+}
+
+module.exports = {
+    RequestService
 }

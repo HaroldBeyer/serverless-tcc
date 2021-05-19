@@ -1,13 +1,11 @@
-const AWS = require('aws-sdk');
 const uuid = require('uuid');
 const { httpReturn } = require('../utils/httpReturn');
 const { HTTP_SUCCESS, DYNAMO_DB_CONFIGS, DYNAMO_DB_SORT_KEYS } = require('../utils/enums');
 
 class ServiceService {
-    constructor() {
+    constructor(AWS) {
         this.TableName = DYNAMO_DB_CONFIGS.TableName;
         this.type = DYNAMO_DB_SORT_KEYS.SERVICE;
-        AWS.config.setPromisesDependency(require('bluebird'));
 
         this.dynamoDb = new AWS.DynamoDB.DocumentClient();
     }

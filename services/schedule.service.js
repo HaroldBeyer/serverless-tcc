@@ -1,13 +1,11 @@
-const AWS = require('aws-sdk');
 const uuid = require('uuid');
 const { httpReturn } = require('../utils/httpReturn');
 const { HTTP_SUCCESS, DYNAMO_DB_CONFIGS, DYNAMO_DB_SORT_KEYS } = require('../utils/enums');
 
 class ScheduleService {
-    constructor() {
+    constructor(AWS) {
         this.TableName = DYNAMO_DB_CONFIGS.TableName;
         this.type = DYNAMO_DB_SORT_KEYS.SCHEDULE;
-        AWS.config.setPromisesDependency(require('bluebird'));
 
         this.dynamoDb = new AWS.DynamoDB.DocumentClient();
     }
@@ -70,19 +68,32 @@ class ScheduleService {
                 ':o': option
             },
             ExpressionAttributeNames: {
-                "#option": "option"
+                "#occupied": "occupied"
             },
-            Key: { id },
+            Key: { id, type: this.type },
             ReturnValues: 'UPDATED_NEW'
         }
 
-        const result = await this.dynamoDb.update(params).promise();
+        console.log(`Key: ${{ id, type: this.type }}`);
 
-        return httpReturn(
-            HTTP_SUCCESS.SuccessOK,
-            `Schedule ${id} succesfully updated`,
-            result
-        );
+        return this.dynamoDb.update(params).promise();
+    }
+
+    async insertPlan(scheduleId, schedulePlanId) {
+        const params = {
+            TableName: this.TableName,
+            UpdateExpression: 'SET #schedulePlan =:sp',
+            ExpressionAttributeValues: {
+                ':sp': schedulePlanId
+            },
+            ExpressionAttributeNames: {
+                "#schedulePlan": "schedulePlan"
+            },
+            Key: { id: scheduleId, type: this.type },
+            ReturnValues: 'UPDATED_NEW'
+        }
+
+        return this.dynamoDb.update(params).promise();
     }
 }
 

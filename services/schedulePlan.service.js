@@ -1,15 +1,16 @@
-const AWS = require('aws-sdk');
+
 const uuid = require('uuid');
 const { httpReturn } = require('../utils/httpReturn');
 const { HTTP_SUCCESS, DYNAMO_DB_CONFIGS, DYNAMO_DB_SORT_KEYS } = require('../utils/enums');
+const { AlterStatusFacade } = require('../facades/alter-status.facade');
 
 class SchedulePlanService {
-    constructor() {
+    constructor(AWS) {
         this.TableName = DYNAMO_DB_CONFIGS.TableName;
         this.type = DYNAMO_DB_SORT_KEYS.SCHEDULE_PLAN;
-        AWS.config.setPromisesDependency(require('bluebird'));
 
         this.dynamoDb = new AWS.DynamoDB.DocumentClient();
+        this.facade = new AlterStatusFacade(AWS, null, null, this);
     }
 
     async get(event) {
@@ -62,6 +63,7 @@ class SchedulePlanService {
 
     async insertSchedule(event) {
         const requestBody = JSON.parse(event.body);
+        //schedulePlanId
         const id = event.pathParameters.id;
 
         const { schedule } = requestBody;
@@ -70,17 +72,15 @@ class SchedulePlanService {
 
         let schedules = schedulePlan.Item.schedules;
 
-        console.log(`schedules: ${JSON.stringify(schedules)}`);
-
         if (!schedules) {
             schedules = [];
         }
 
         schedules.push(schedule);
 
-        let UpdateExpression = 'SET #schedules =:s';
-        let ExpressionAttributeValues = { ":s": schedules };
-        let ExpressionAttributeNames = { "#schedules": "schedules" };
+        const UpdateExpression = 'SET #schedules =:s';
+        const ExpressionAttributeValues = { ":s": schedules };
+        const ExpressionAttributeNames = { "#schedules": "schedules" };
 
         const params = {
             TableName: this.TableName,
@@ -91,7 +91,12 @@ class SchedulePlanService {
             ReturnValues: 'UPDATED_NEW'
         }
 
-        const result = await this.dynamoDb.update(params).promise();
+        const promises = [];
+
+        promises.push(this.dynamoDb.update(params).promise());
+        promises.push(this.facade.insertPlanIntoSchedule(schedule, id));
+
+        const result = await Promise.all(promises);
 
         return httpReturn(
             HTTP_SUCCESS.SuccessOK,
@@ -100,9 +105,10 @@ class SchedulePlanService {
         );
     }
 
-
+    async getByService(service) {
+        const result = await this.dynamoDb.get({}).promise();
+    }
 }
-
 
 module.exports = {
     SchedulePlanService

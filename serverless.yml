@@ -91,3 +91,38 @@ functions:
           path: schedule
           method: POST
           cors: true
+  getRequest:
+    handler: handlers/request-handler.get
+    events:
+      - http:
+          path: request/{id}
+          method: GET
+          cors: true
+  getAllRequests:
+    handler: handlers/request-handler.getAll
+    events:
+      - http:
+          path: request
+          method: GET
+          cors: true
+  insertRequest: 
+    handler: handlers/request-handler.insert
+    events:
+      - http:
+          path: request
+          method: POST
+          cors: true
+  confirmRequest: 
+    handler: handlers/request-handler.confirm
+    events:
+      - http:
+          path: request/{id}/confirm
+          method: PUT
+          cors: true
+  cancelRequest: 
+    handler: handlers/request-handler.cancel
+    events:
+      - http:
+          path: request/{id}/cancel
+          method: PUT
+          cors: true

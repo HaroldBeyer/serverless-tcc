@@ -1,6 +1,8 @@
+const AWS = require('aws-sdk');
+AWS.config.setPromisesDependency(require('bluebird'));
 const { ServiceService } = require('../services/service.service');
 
-const service = new ServiceService();
+const service = new ServiceService(AWS);
 
 module.exports.getService = async (event) => {
     return service.get(event);

@@ -1,6 +1,9 @@
+const AWS = require('aws-sdk');
+AWS.config.setPromisesDependency(require('bluebird'));
+
 const { SchedulePlanService } = require('../services/schedulePlan.service');
 
-const service = new SchedulePlanService();
+const service = new SchedulePlanService(AWS);
 
 module.exports.get = async (event) => {
     return service.get(event);
