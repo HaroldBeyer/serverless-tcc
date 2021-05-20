@@ -1,28 +1,17 @@
 const uuid = require('uuid');
 const { httpReturn } = require('../utils/httpReturn');
-const { HTTP_SUCCESS, DYNAMO_DB_CONFIGS, DYNAMO_DB_SORT_KEYS, DYNAMO_DB_APPLICATIONS } = require('../utils/enums');
+const { HTTP_SUCCESS, FAUNA_DB_COLLECTIONS } = require('../utils/enums');
 
 class ServiceService {
-    constructor(AWS) {
-        this.TableName = DYNAMO_DB_CONFIGS.TableName;
-        this.type = DYNAMO_DB_SORT_KEYS.SERVICE;
-        this.application = DYNAMO_DB_APPLICATIONS.SERVERLESS_APPLICATION;
-
-        this.dynamoDb = new AWS.DynamoDB.DocumentClient();
+    constructor(DB) {
+        this.type = FAUNA_DB_COLLECTIONS.SERVICE;
+        this.db = DB;
     }
 
     async get(event) {
-        const id = event.pathParameters.id;
+        const id = event && event.pathParameters && event.pathParameters.id ? event.pathParameters.id : event;
 
-        const params = {
-            TableName: this.TableName,
-            Key: {
-                application: this.application,
-                id,
-            }
-        };
-
-        const result = await this.dynamoDb.get(params).promise();
+        const result = await this.db.get(this.type, id);
 
         return httpReturn(
             HTTP_SUCCESS.SuccessOK,
@@ -32,13 +21,8 @@ class ServiceService {
     }
 
     async getAll() {
-        const params = {
-            TableName: this.TableName,
-            FilterExpression: "application = :application",
-            ExpressionAttributeValues: { ":application": this.application }
-        };
 
-        const result = await this.dynamoDb.scan(params).promise();
+        const result = await this.db.getAll(this.type);
 
         return httpReturn(
             HTTP_SUCCESS.SuccessOK,
@@ -49,17 +33,12 @@ class ServiceService {
 
     async insert(event) {
         const requestBody = JSON.parse(event.body);
-        const id = uuid.v1();
         const { name } = requestBody;
 
-        const Item = { id, type: this.type, name, application: this.application };
+        const Item = { name };
 
-        const params = {
-            TableName: this.TableName,
-            Item
-        }
 
-        const result = await this.dynamoDb.put(params).promise();
+        const result = await this.db.create(this.type, Item);
 
         return httpReturn(
             HTTP_SUCCESS.SuccessCreated,

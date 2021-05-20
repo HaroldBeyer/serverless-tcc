@@ -1,28 +1,16 @@
-const uuid = require('uuid');
 const { httpReturn } = require('../utils/httpReturn');
-const { HTTP_SUCCESS, DYNAMO_DB_CONFIGS, DYNAMO_DB_SORT_KEYS, DYNAMO_DB_APPLICATIONS } = require('../utils/enums');
+const { HTTP_SUCCESS, FAUNA_DB_COLLECTIONS } = require('../utils/enums');
 
 class ScheduleService {
-    constructor(AWS) {
-        this.TableName = DYNAMO_DB_CONFIGS.TableName;
-        this.type = DYNAMO_DB_SORT_KEYS.SCHEDULE;
-        this.application = DYNAMO_DB_APPLICATIONS.SERVERLESS_APPLICATION;
-
-        this.dynamoDb = new AWS.DynamoDB.DocumentClient();
+    constructor(DB) {
+        this.type = FAUNA_DB_COLLECTIONS.SCHEDULE;
+        this.db = DB;
     }
 
     async get(event) {
-        const id = event.pathParameters.id;
+        const id = event && event.pathParameters && event.pathParameters.id ? event.pathParameters.id : event;
 
-        const params = {
-            TableName: this.TableName,
-            Key: {
-                application: this.application,
-                id,
-            }
-        };
-
-        const result = await this.dynamoDb.get(params).promise();
+        const result = await this.db.get(this.type, id);
 
         return httpReturn(
             HTTP_SUCCESS.SuccessOK,
@@ -31,14 +19,10 @@ class ScheduleService {
         );
     }
 
-    async getAll() {
-        const params = {
-            TableName: this.TableName,
-            FilterExpression: "application = :application",
-            ExpressionAttributeValues: { ":application": this.application }
-        };
 
-        const result = await this.dynamoDb.scan(params).promise();
+
+    async getAll() {
+        const result = await this.db.getAll(this.type);
 
         return httpReturn(
             HTTP_SUCCESS.SuccessOK,
@@ -49,18 +33,13 @@ class ScheduleService {
 
     async insert(event) {
         const requestBody = JSON.parse(event.body);
-        const id = uuid.v1();
-        const { hour, day, year, month } = requestBody;
+        const { hour, day, year, month, service } = requestBody;
         const date = new Date(year, month, day, hour).toISOString();
 
-        let Item = { application: this.application, id, type: this.type, occupied: false, date };
+        let Item = { occupied: false, date, service };
 
-        const params = {
-            TableName: this.TableName,
-            Item
-        }
 
-        const result = await this.dynamoDb.put(params).promise();
+        const result = await this.db.create(this.type, Item);
 
         return httpReturn(
             HTTP_SUCCESS.SuccessCreated,
@@ -70,40 +49,9 @@ class ScheduleService {
     }
 
     async alter(id, option) {
-        const params = {
-            TableName: this.TableName,
-            UpdateExpression: 'SET #occupied =:o',
-            ExpressionAttributeValues: {
-                ':o': option
-            },
-            ExpressionAttributeNames: {
-                "#occupied": "occupied"
-            },
-            Key: { id, applcation: this.application },
-            ReturnValues: 'UPDATED_NEW'
-        }
-
-        console.log(`Key: ${{ id, type: this.type }}`);
-
-        return this.dynamoDb.update(params).promise();
+        return this.db.update(this.type, id, { occupied: option });
     }
 
-    async insertPlan(scheduleId, schedulePlanId) {
-        const params = {
-            TableName: this.TableName,
-            UpdateExpression: 'SET #schedulePlan =:sp',
-            ExpressionAttributeValues: {
-                ':sp': schedulePlanId
-            },
-            ExpressionAttributeNames: {
-                "#schedulePlan": "schedulePlan"
-            },
-            Key: { id: scheduleId, application: this.application },
-            ReturnValues: 'UPDATED_NEW'
-        }
-
-        return this.dynamoDb.update(params).promise();
-    }
 }
 
 

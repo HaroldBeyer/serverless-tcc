@@ -1,25 +1,19 @@
 const { AlterStatusFacade } = require('../facades/alter-status.facade');
 
-const uuid = require('uuid');
 const { httpReturn } = require('../utils/httpReturn');
-const { HTTP_SUCCESS, DYNAMO_DB_CONFIGS, DYNAMO_DB_SORT_KEYS, REQUEST_STATUS } = require('../utils/enums');
+const { HTTP_SUCCESS, REQUEST_STATUS, FAUNA_DB_COLLECTIONS } = require('../utils/enums');
 
 class RequestService {
-    constructor(AWS) {
-        this.TableName = DYNAMO_DB_CONFIGS.TableName;
-        this.type = DYNAMO_DB_SORT_KEYS.REQUEST;
-
-        this.dynamoDb = new AWS.DynamoDB.DocumentClient();
-        this.facade = new AlterStatusFacade(AWS, this);
+    constructor(DB) {
+        this.type = FAUNA_DB_COLLECTIONS.REQUEST;
+        this.db = DB;
+        this.facade = new AlterStatusFacade(DB, this, null);
     }
 
-    async get(id) {
-        const result = await this.dynamoDb.get({
-            TableName: this.TableName, Key: {
-                id,
-                type: this.type
-            }
-        }).promise();
+    async get(event) {
+        const id = event && event.pathParameters && event.pathParameters.id ? event.pathParameters.id : event;
+
+        const result = await this.db.get(this.type, id);
 
         return httpReturn(
             HTTP_SUCCESS.SuccessOK,
@@ -29,8 +23,7 @@ class RequestService {
     }
 
     async getAll() {
-        const Key = { type: this.type };
-        const result = await this.dynamoDb.get({ TableName, Key }).promise();
+        const result = await this.db.getAll(this.type);
 
         return httpReturn(
             HTTP_SUCCESS.SuccessOK,
@@ -41,23 +34,14 @@ class RequestService {
 
     async insert(event) {
         const requestBody = JSON.parse(event.body);
-        const id = uuid.v1();
         const createdAt = new Date().toISOString();
         const status = REQUEST_STATUS.WAITING;
-        const { service } = requestBody;
+        const { service, scheduledDate } = requestBody;
 
-        const _service = await this.dynamoDb.get({ TableName: this.TableName, Key: { id: service, type: DYNAMO_DB_SORT_KEYS.SERVICE } }).promise();
+        const Item = { service, status, scheduledDate, createdAt };
 
-        const scheduledDate = _service.Item.Date;
 
-        let Item = { id, type: this.type, service, status, scheduledDate, createdAt };
-
-        const params = {
-            TableName: this.TableName,
-            Item
-        }
-
-        const result = await this.dynamoDb.put(params).promise();
+        const result = await this.db.create(this.type, Item);
 
         return httpReturn(
             HTTP_SUCCESS.SuccessCreated,
@@ -68,6 +52,7 @@ class RequestService {
 
     async confirm(event) {
         const id = event.pathParameters.id;
+        console.log(`Id: ${id}`);
         return this.facade.propagateNewStatus(id, true);
     }
 
@@ -77,19 +62,7 @@ class RequestService {
     }
 
     async alterStatus(id, status) {
-        const UpdateExpression = 'SET #status =:s';
-        const ExpressionAttributeValues = { ":s": status };
-        const ExpressionAttributeNames = { "#status": "status" };
-        const params = {
-            TableName: this.TableName,
-            UpdateExpression,
-            ExpressionAttributeNames,
-            ExpressionAttributeValues,
-            Key: { id, type: this.type },
-            ReturnValues: 'UPDATED_NEW'
-        };
-        console.log(`Key: ${{ id, type: this.type }}`);
-        return this.dynamoDb.update(params).promise();
+        return this.db.update(this.type, id, { status });
     }
 
 }

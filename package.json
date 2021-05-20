@@ -9,6 +9,7 @@
   "dependencies": {
     "aws-sdk": "^2.900.0",
     "bluebird": "^3.7.2",
+    "faunadb": "^4.2.0",
     "uuid": "^8.3.2"
   },
   "keywords": [],
