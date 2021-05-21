@@ -85,10 +85,9 @@ const DYNAMO_DB_APPLICATIONS = {
     SERVERLESS_APPLICATION: "serverless"
 }
 
-const DYNAMO_DB_SORT_KEYS = {
+const FAUNA_DB_COLLECTIONS = {
     SERVICE: "service",
     REQUEST: "request",
-    SCHEDULE_PLAN: "schedulePlan",
     SCHEDULE: "schedule"
 };
 
@@ -98,6 +97,7 @@ const REQUEST_STATUS = {
     WAITING: "waiting"
 }
 
+
 module.exports = {
     HTTP_CLIENT_ERRORS,
     HTTP_INFO,
@@ -105,7 +105,7 @@ module.exports = {
     HTTP_SERVER_ERRORS,
     HTTP_SUCCESS,
     DYNAMO_DB_CONFIGS,
-    DYNAMO_DB_SORT_KEYS,
+    FAUNA_DB_COLLECTIONS,
     REQUEST_STATUS,
     DYNAMO_DB_APPLICATIONS
 }

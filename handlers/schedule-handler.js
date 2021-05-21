@@ -1,8 +1,12 @@
-const AWS = require('aws-sdk');
 const { ScheduleService } = require('../services/schedule.service');
+const { DB } = require('../db/db');
+let faunaDB;
 
-AWS.config.setPromisesDependency(require('bluebird'));
-const service = new ScheduleService(AWS);
+let cachedDB = faunaDB ? faunaDB : new DB();
+faunaDB = faunaDB ? faunaDB : cachedDB;
+
+const service = new ScheduleService(cachedDB);
+
 
 module.exports.get = async (event) => {
     return service.get(event);

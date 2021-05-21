@@ -1,8 +1,12 @@
 const { RequestService } = require('../services/request.service');
-const AWS = require('aws-sdk');
-AWS.config.setPromisesDependency(require('bluebird'));
+const { DB } = require('../db/db');
+let faunaDB;
 
-const service = new RequestService(AWS);
+let cachedDB = faunaDB ? faunaDB : new DB();
+faunaDB = faunaDB ? faunaDB : cachedDB;
+
+const service = new RequestService(cachedDB);
+
 
 module.exports.get = async (event) => {
     const id = event.pathParameters.id;
