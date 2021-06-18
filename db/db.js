@@ -5,7 +5,7 @@ const { Get, Create, Update, Index, Ref, Collection, Paginate, Documents, Map, L
 class DB {
     constructor() {
         this.client = new faunadb.Client({
-            secret: 'fnAEJnx3M4ACAL8cCWnkXCJnNQgkngawdblamyr0'
+            secret: process.env.FAUNADB_SECRET_KEY
         });
 
     }
